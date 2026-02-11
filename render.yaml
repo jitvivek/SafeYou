@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: safeyou
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install --prefix server && npm install --prefix client && npm run build --prefix client
+    startCommand: npm start --prefix server
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_PATH
+        value: ./data/safeyou.db
+      - key: PORT
+        value: 3001
