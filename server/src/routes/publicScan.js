@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { runScan, generatePartialReport } from '../engine/scanner.js';
+import { runBinaryAnalysis, generateBinaryPartialReport } from '../engine/binaryAnalyzer.js';
 
 const router = Router();
 
@@ -21,12 +22,19 @@ router.post('/scan', async (req, res) => {
       file_name: null,
     };
 
-    const scanResult = await runScan(mockRepo);
+    // Run both analyses in parallel
+    const [scanResult, binaryResult] = await Promise.all([
+      runScan(mockRepo),
+      runBinaryAnalysis(mockRepo),
+    ]);
+
     const partialReport = generatePartialReport(scanResult);
+    const binaryReport = generateBinaryPartialReport(binaryResult);
 
     res.json({
       scanId: uuidv4(),
       report: partialReport,
+      binaryReport,
       message: 'This is a partial report. Sign up to see the full vulnerability analysis.',
     });
   } catch (err) {

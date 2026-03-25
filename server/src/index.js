@@ -11,6 +11,7 @@ import scanRoutes from './routes/scans.js';
 import reportRoutes from './routes/reports.js';
 import planRoutes from './routes/plans.js';
 import publicScanRoutes from './routes/publicScan.js';
+import remediationRoutes from './routes/remediation.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -53,6 +54,7 @@ async function start() {
   app.use('/api/reports', reportRoutes);
   app.use('/api/plans', planRoutes);
   app.use('/api/public', publicScanRoutes);
+  app.use('/api/remediation', remediationRoutes);
 
   // Serve static frontend in production
   const __filename = fileURLToPath(import.meta.url);

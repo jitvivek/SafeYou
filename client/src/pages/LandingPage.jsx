@@ -12,7 +12,8 @@ import {
   Shield, ShieldCheck, Zap, Code2, FileSearch, Brain,
   ArrowRight, Check, Star, Lock, Gauge, FileText,
   GitBranch, Upload, ScanSearch, BarChart3, ChevronRight,
-  AlertTriangle, CheckCircle2,
+  AlertTriangle, CheckCircle2, Cpu, Box, HardDrive,
+  Server, Package, Layers, Binary, Container,
 } from 'lucide-react';
 
 const fadeInUp = {
@@ -30,14 +31,17 @@ export default function LandingPage() {
   const [repoUrl, setRepoUrl] = useState('');
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
+  const [binaryReport, setBinaryReport] = useState(null);
 
   const handleQuickScan = async () => {
     if (!repoUrl.trim()) return;
     setScanning(true);
     setScanResult(null);
+    setBinaryReport(null);
     try {
       const data = await api.publicScan({ url: repoUrl, name: repoUrl });
       setScanResult(data.report);
+      setBinaryReport(data.binaryReport);
     } catch (err) {
       console.error(err);
     } finally {
@@ -90,12 +94,12 @@ export default function LandingPage() {
             >
               <div className="flex gap-2">
                 <Input
-                  placeholder="Enter repository URL (e.g. github.com/user/repo)"
+                  placeholder="Enter GitHub repo URL or server address (e.g. github.com/user/repo)"
                   value={repoUrl}
                   onChange={(e) => setRepoUrl(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleQuickScan()}
                   className="h-12 text-base"
-                  aria-label="Repository URL for quick scan"
+                  aria-label="Repository URL or server address for quick scan"
                 />
                 <Button
                   variant="glow"
@@ -182,6 +186,173 @@ export default function LandingPage() {
                   <CardFooter>
                     <Button variant="glow" className="w-full" onClick={() => navigate('/register')}>
                       Get Full Report <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Binary CVE Analysis Report */}
+            {binaryReport && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.15 }}
+                className="mt-6"
+              >
+                <Card className="max-w-3xl mx-auto text-left border-primary/40 glow-green">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      <Cpu className="h-5 w-5 text-primary" />
+                      Binary CVE Analysis Report
+                    </CardTitle>
+                    <CardDescription>
+                      Scanned binaries, firmware, libraries & containers — found{' '}
+                      <span className="text-foreground font-semibold">{binaryReport.summary.total}</span>{' '}
+                      vulnerabilities across{' '}
+                      <span className="text-foreground font-semibold">{binaryReport.components.length}</span>{' '}
+                      detected components
+                    </CardDescription>
+                  </CardHeader>
+
+                  <CardContent className="space-y-5">
+                    {/* Severity badges */}
+                    <div className="flex gap-3 flex-wrap">
+                      {binaryReport.summary.critical > 0 && (
+                        <Badge variant="critical">Critical: {binaryReport.summary.critical}</Badge>
+                      )}
+                      {binaryReport.summary.high > 0 && (
+                        <Badge variant="high">High: {binaryReport.summary.high}</Badge>
+                      )}
+                      {binaryReport.summary.medium > 0 && (
+                        <Badge variant="medium">Medium: {binaryReport.summary.medium}</Badge>
+                      )}
+                      {binaryReport.summary.low > 0 && (
+                        <Badge variant="low">Low: {binaryReport.summary.low}</Badge>
+                      )}
+                    </div>
+
+                    {/* Risk score bar */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Overall Risk Score</span>
+                        <span className={`font-bold ${
+                          binaryReport.summary.riskLevel === 'Critical' ? 'text-red-500' :
+                          binaryReport.summary.riskLevel === 'High' ? 'text-orange-500' :
+                          binaryReport.summary.riskLevel === 'Medium' ? 'text-yellow-500' : 'text-green-500'
+                        }`}>
+                          {binaryReport.summary.riskScore}/100 — {binaryReport.summary.riskLevel}
+                        </span>
+                      </div>
+                      <div className="h-2.5 w-full bg-secondary rounded-full overflow-hidden">
+                        <motion.div
+                          className={`h-full rounded-full ${
+                            binaryReport.summary.riskLevel === 'Critical' ? 'bg-red-500' :
+                            binaryReport.summary.riskLevel === 'High' ? 'bg-orange-500' :
+                            binaryReport.summary.riskLevel === 'Medium' ? 'bg-yellow-500' : 'bg-green-500'
+                          }`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${binaryReport.summary.riskScore}%` }}
+                          transition={{ duration: 1, ease: 'easeOut' }}
+                        />
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Detected Components */}
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium flex items-center gap-1.5">
+                        <Package className="h-4 w-4 text-primary" />
+                        Detected Components
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {binaryReport.components.map((comp, i) => {
+                          const catIcons = { binary: '⚙️', firmware: '🔧', library: '📚', container: '📦' };
+                          return (
+                            <Badge key={i} variant="outline" className="text-xs px-2.5 py-1">
+                              <span className="mr-1">{catIcons[comp.category] || '📦'}</span>
+                              {comp.name}
+                              <span className="ml-1.5 opacity-60 text-[10px] uppercase">{comp.category}</span>
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Category breakdown */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        { label: 'Binaries', value: binaryReport.summary.byCategory?.binary || 0, icon: '⚙️' },
+                        { label: 'Firmware', value: binaryReport.summary.byCategory?.firmware || 0, icon: '🔧' },
+                        { label: 'Libraries', value: binaryReport.summary.byCategory?.library || 0, icon: '📚' },
+                        { label: 'Containers', value: binaryReport.summary.byCategory?.container || 0, icon: '📦' },
+                      ].map((cat, i) => (
+                        <div key={i} className="bg-secondary/60 rounded-lg p-3 text-center">
+                          <span className="text-lg">{cat.icon}</span>
+                          <p className="text-xl font-bold text-foreground">{cat.value}</p>
+                          <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{cat.label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Scan metrics */}
+                    <div className="flex flex-wrap gap-4 text-xs text-muted-foreground bg-secondary/40 rounded-lg p-3">
+                      <span>🔍 <span className="text-foreground font-medium">{binaryReport.metrics.binariesScanned}</span> binaries scanned</span>
+                      <span>📖 <span className="text-foreground font-medium">{binaryReport.metrics.librariesDetected}</span> libraries detected</span>
+                      <span>🧩 <span className="text-foreground font-medium">{binaryReport.metrics.totalComponents}</span> total components</span>
+                      <span>⏱ <span className="text-foreground font-medium">{(binaryReport.metrics.durationMs / 1000).toFixed(1)}s</span> scan time</span>
+                    </div>
+
+                    <Separator />
+
+                    {/* Top Binary Issues */}
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium flex items-center gap-1.5">
+                        <AlertTriangle className="h-4 w-4 text-orange-500" />
+                        Top Binary Vulnerabilities
+                      </p>
+                      {binaryReport.topIssues.map((issue, i) => (
+                        <div key={i} className="flex items-start gap-3 text-sm p-3 rounded-lg bg-secondary/50 border border-border/50">
+                          <div className={`shrink-0 w-2 h-2 mt-1.5 rounded-full ${
+                            issue.severity === 'critical' ? 'bg-red-500' :
+                            issue.severity === 'high' ? 'bg-orange-500' :
+                            issue.severity === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'
+                          }`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono text-xs text-primary">{issue.cve_id}</span>
+                              <Badge variant={issue.severity} className="text-[10px] px-1.5 py-0">
+                                {issue.severity.toUpperCase()} ({issue.cvss_score})
+                              </Badge>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                {issue.component_category}
+                              </Badge>
+                            </div>
+                            <p className="text-foreground mt-0.5">{issue.title}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Component: <span className="text-foreground">{issue.affected_component}</span>
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Upsell */}
+                    <div className="bg-primary/10 rounded-lg p-4 text-sm text-center space-y-2">
+                      <Lock className="h-4 w-4 inline mr-1" />
+                      <span className="font-medium">Sign up to unlock the full Binary CVE Analysis</span>
+                      <p className="text-xs text-muted-foreground">
+                        AI-powered remediation, patch guidance, firmware deep-dive, SBOM export & more
+                      </p>
+                    </div>
+                  </CardContent>
+
+                  <CardFooter>
+                    <Button variant="glow" className="w-full" onClick={() => navigate('/register')}>
+                      Unlock Full Binary Report <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </CardFooter>
                 </Card>

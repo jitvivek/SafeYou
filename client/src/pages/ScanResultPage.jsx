@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import {
   ArrowLeft, ShieldCheck, AlertTriangle, Shield, Brain,
   FileText, Download, Lock, Crown, Code2, Wrench,
-  ExternalLink, ChevronDown, ChevronUp, Copy, Check,
+  ExternalLink, ChevronDown, ChevronUp, Copy, Check, Hammer, CheckCircle2,
 } from 'lucide-react';
 
 export default function ScanResultPage() {
@@ -98,6 +98,8 @@ export default function ScanResultPage() {
   const summary = scan.summary || {};
   const riskPercentage = summary.riskScore || 0;
 
+  const isRemediated = scan.scan_type === 'remediation';
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -108,8 +110,13 @@ export default function ScanResultPage() {
           </Button>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <ShieldCheck className="h-6 w-6 text-primary" />
-            Scan Results: {scan.repo_name}
+            {isRemediated ? 'Post-Remediation Report' : 'Scan Results'}: {scan.repo_name}
           </h1>
+          {isRemediated && (
+            <Badge className="mt-1 bg-green-500/10 text-green-500 border-green-500/30">
+              <CheckCircle2 className="h-3 w-3 mr-1" /> CVE Fixes Applied — Clean Scan
+            </Badge>
+          )}
           <p className="text-sm text-muted-foreground mt-1">
             Completed {new Date(scan.completed_at).toLocaleDateString('en-US', {
               month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -117,6 +124,11 @@ export default function ScanResultPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          {!isRemediated && (
+            <Button variant="glow" size="sm" onClick={() => navigate(`/dashboard/scan/${scanId}/remediate`)}>
+              <Hammer className="h-4 w-4 mr-1" /> Fix All Issues
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => handleDownload('json')}>
             <Download className="h-4 w-4 mr-1" /> JSON
           </Button>
@@ -125,6 +137,33 @@ export default function ScanResultPage() {
           </Button>
         </div>
       </div>
+
+      {/* Clean scan banner */}
+      {isRemediated && vulnerabilities.length === 0 && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="border-green-500/40 bg-green-500/5">
+            <CardContent className="flex flex-col items-center justify-center p-8 gap-3">
+              <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
+                <ShieldCheck className="h-8 w-8 text-green-500" />
+              </div>
+              <h2 className="text-xl font-bold text-green-500">All CVEs Fixed!</h2>
+              <p className="text-sm text-muted-foreground text-center max-w-md">
+                All previously detected vulnerabilities have been resolved. Old source files
+                have been renamed with a <code className="text-primary">_dirty</code> prefix
+                and patched replacements are in place.
+              </p>
+              <div className="flex gap-2 mt-2">
+                <Badge variant="outline" className="text-green-500 border-green-500/30">
+                  Risk Score: {riskPercentage}/100
+                </Badge>
+                <Badge variant="outline" className="text-green-500 border-green-500/30">
+                  {summary.riskLevel || 'Clean'}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

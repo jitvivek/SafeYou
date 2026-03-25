@@ -1,4 +1,6 @@
 import { getDb } from './init.js';
+import bcrypt from 'bcryptjs';
+import { v4 as uuidv4 } from 'uuid';
 
 export function seedDatabase() {
   const db = getDb();
@@ -38,6 +40,19 @@ export function seedDatabase() {
       INSERT INTO plans (id, name, price, scan_limit, full_reports, ai_remediation, pdf_export, priority_support, features)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(...plan);
+  }
+
+  // Seed admin/test user with Enterprise plan (full access)
+  const adminEmail = 'jit.vivek@gmail.com';
+  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(adminEmail);
+  if (!existing) {
+    const id = uuidv4();
+    const passwordHash = bcrypt.hashSync('vekjit841112', 12);
+    db.prepare(`
+      INSERT INTO users (id, email, password_hash, name, plan, trial_scans_remaining, scans_this_month)
+      VALUES (?, ?, ?, ?, 'enterprise', 999, 0)
+    `).run(id, adminEmail, passwordHash, 'Vivek Jit');
+    console.log('✅ Test user seeded: jit.vivek@gmail.com (Enterprise plan)');
   }
 
   console.log('✅ Database seeded with plans');

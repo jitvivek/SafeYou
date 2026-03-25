@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ScanResultPage from './pages/ScanResultPage';
+import RemediationPage from './pages/RemediationPage';
 import ReportPage from './pages/ReportPage';
 import PricingPage from './pages/PricingPage';
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -41,6 +42,7 @@ export default function App() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="scan/:scanId" element={<ScanResultPage />} />
+        <Route path="scan/:scanId/remediate" element={<RemediationPage />} />
         <Route path="report/:scanId" element={<ReportPage />} />
       </Route>
     </Routes>

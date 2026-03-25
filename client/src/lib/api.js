@@ -64,6 +64,9 @@ export const api = {
   // Plans
   getPlans: () => request('/plans'),
 
+  // Remediation
+  runRemediation: (scanId) => request(`/remediation/${scanId}`, { method: 'POST' }),
+
   // Public
   publicScan: (body) => request('/public/scan', { method: 'POST', body: JSON.stringify(body) }),
 };
