@@ -47,7 +47,7 @@ export function seedDatabase() {
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(adminEmail);
   if (!existing) {
     const id = uuidv4();
-    const passwordHash = bcrypt.hashSync('vekjit841112', 12);
+    const passwordHash = bcrypt.hashSync('vivekcyber', 12);
     db.prepare(`
       INSERT INTO users (id, email, password_hash, name, plan, trial_scans_remaining, scans_this_month)
       VALUES (?, ?, ?, ?, 'enterprise', 999, 0)
